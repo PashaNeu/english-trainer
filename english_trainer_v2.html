@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Фразы — Обучение • Карточки • Диалоги</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#94a3b8;
+    --accent:#60a5fa; --ok:#22c55e; --warn:#fbbf24; --bad:#ef4444; --border:#1f2a44;
+  }
+  html,body{height:100%}
+  body{margin:0;background:linear-gradient(180deg,#081025,#0b1220);color:var(--text);
+       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:16px 14px 120px}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:6px 0 10px}
+  h1{margin:0;font-size:1.1rem;letter-spacing:.3px}
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:6px 0 12px}
+  .tabs button{padding:12px 8px;border:0;background:transparent;color:var(--muted);font-weight:700}
+  .tabs button.active{background:rgba(255,255,255,.06);color:var(--text)}
+  .card{background:rgba(17,24,39,.78);backdrop-filter:blur(6px);border:1px solid var(--border);
+        border-radius:16px;padding:14px;margin:8px 0}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .btn{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);
+       color:var(--text);font-weight:700}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:rgba(96,165,250,.18);border-color:rgba(96,165,250,.5);color:#dbeafe}
+  .btn.good{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.5);color:#dcfce7}
+  .btn.bad{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.5);color:#fee2e2}
+  .btn.warn{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.5);color:#fef3c7}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .mute{color:var(--muted)}
+  input[type="number"],input[type="text"],textarea,select{width:100%;padding:12px;border-radius:12px;
+       border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);font-size:1rem}
+  .list{display:grid;grid-template-columns:1fr;gap:10px}
+  .item{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:10px;
+        background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:10px}
+  .phrase-en{font-size:1.15rem;font-weight:700}
+  .phrase-ru{color:var(--muted);margin-top:6px}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  .center{text-align:center}
+  .big{font-size:1.25rem}
+  footer{position:fixed;left:0;right:0;bottom:0;padding:10px 12px;background:linear-gradient(180deg,rgba(8,16,37,0),rgba(8,16,37,.9));
+         border-top:1px solid var(--border);backdrop-filter:blur(6px)}
+  .kbd{border:1px solid var(--border);border-bottom-width:3px;border-radius:8px;padding:2px 6px;font-weight:800}
+  .success{border-color:rgba(34,197,94,.6)!important}
+  .fail{border-color:rgba(239,68,68,.6)!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Тренажёр фраз • Обучение / Карточки / Диалоги</h1>
+    <div class="controls">
+      <button class="btn" id="importBtn">⬆ Импорт</button>
+      <button class="btn" id="exportBtn">⬇ Экспорт</button>
+      <input type="file" id="fileInput" accept="application/json" style="display:none">
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="learn">Обучение</button>
+    <button class="tab" data-tab="cards">Карточки</button>
+    <button class="tab" data-tab="dialogs">Диалоги</button>
+  </div>
+
+  <!-- LEARN -->
+  <section id="learn" class="card">
+    <div class="row">
+      <div class="mute">Нажимай ▶ чтобы услышать произношение. Можно включить автопроигрывание списка.</div>
+      <div class="controls">
+        <button class="btn" id="toggleRu">👁 RU</button>
+        <button class="btn" id="shuffleLearn">🔀 Перемешать</button>
+        <button class="btn primary" id="autoPlay">▶ Автоплей</button>
+        <button class="btn" id="stopPlay">⏹ Стоп</button>
+      </div>
+    </div>
+    <div class="list" id="learnList"></div>
+  </section>
+
+  <!-- CARDS -->
+  <section id="cards" class="card" style="display:none">
+    <div class="row">
+      <div class="controls">
+        <label class="mute">Автопоказ (сек):</label>
+        <input type="number" id="revealSec" min="0" max="10" value="3" style="width:90px">
+        <select id="cardOrder">
+          <option value="random">Случайно</option>
+          <option value="sequential" selected>По порядку</option>
+        </select>
+        <button class="btn" id="resetCards">↻ Сбросить</button>
+      </div>
+      <div class="mute">Подсказки: <span class="kbd">Space</span> — далее</div>
+    </div>
+
+    <div class="card center" style="min-height:180px">
+      <div>
+        <div class="mute">Переведи на английский:</div>
+        <div id="cardPrompt" class="big" style="margin:8px 0 10px">—</div>
+        <div class="mute">Показ через: <span id="countdown">off</span></div>
+        <div id="cardAnswer" class="big mono" style="display:none;margin-top:8px">—</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn bad" id="again">Снова</button>
+      <button class="btn good" id="knew">Знаю</button>
+      <button class="btn warn" id="speakAns">🔊 Произнести</button>
+      <button class="btn" id="nextCard">Далее →</button>
+    </div>
+
+    <div class="row">
+      <div class="mute">Прогресс: <span id="cardProgress">0/0</span></div>
+      <div class="mute">Серия: <span id="streak">0</span></div>
+    </div>
+  </section>
+
+  <!-- DIALOGS -->
+  <section id="dialogs" class="card" style="display:none">
+    <div class="row">
+      <div class="mute">Задание на русском → ответ по-английски. Можно подсмотреть/прослушать ответ.</div>
+      <div class="controls">
+        <button class="btn" id="shuffleDlg">🔀 Перемешать</button>
+        <button class="btn" id="resetDlg">↻ Сбросить</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mute">Задание:</div>
+      <div id="dlgPrompt" class="big" style="margin:6px 0 10px">—</div>
+
+      <input id="dlgInput" placeholder="Напиши ответ по-английски…" autocomplete="off">
+      <div class="controls" style="margin-top:10px">
+        <button class="btn primary" id="checkDlg">Проверить</button>
+        <button class="btn" id="revealDlg">Показать ответ</button>
+        <button class="btn warn" id="speakDlg">🔊 Произнести</button>
+        <button class="btn" id="nextDlg">Далее →</button>
+      </div>
+      <div id="dlgFeedback" class="mute" style="margin-top:6px"></div>
+      <div id="dlgAnswer" class="mono" style="display:none;margin-top:6px"></div>
+    </div>
+
+    <div class="row">
+      <div class="mute">Пункт: <span id="dlgIdx">0/0</span></div>
+      <div class="mute">Верно: <span id="dlgOk">0</span></div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="row" style="justify-content:space-between">
+    <div class="mute">Сохранение на устройстве • <span id="tz"></span></div>
+    <div class="mute">Горячие клавиши: <span class="kbd">Space</span> — далее</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // ===== Data =====
+  const defaultData = [
+    {"en":"How’s it going?","ru":"Как дела?"},
+    {"en":"Long time no see!","ru":"Давно не виделись!"},
+    {"en":"What do you mean?","ru":"Что ты имеешь в виду?"},
+    {"en":"I don’t get it.","ru":"Я не понимаю."},
+    {"en":"Could you repeat, please?","ru":"Повтори, пожалуйста."},
+    {"en":"Never mind.","ru":"Неважно / Забудь."},
+    {"en":"That makes sense.","ru":"Логично."},
+    {"en":"It doesn’t matter.","ru":"Это не имеет значения."},
+    {"en":"Take care!","ru":"Береги себя!"},
+    {"en":"Don’t worry.","ru":"Не волнуйся."},
+    {"en":"It’s up to you.","ru":"Тебе решать."},
+    {"en":"I’ll think about it.","ru":"Я подумаю."},
+    {"en":"Sounds good!","ru":"Звучит хорошо!"},
+    {"en":"I’m on my way.","ru":"Я уже в пути."},
+    {"en":"Just a second.","ru":"Секунду."},
+    {"en":"I’m not sure.","ru":"Я не уверен."},
+    {"en":"I don’t feel like it.","ru":"Мне не хочется."},
+    {"en":"It happens.","ru":"Бывает."},
+    {"en":"You’re welcome.","ru":"Пожалуйста."},
+    {"en":"Same here.","ru":"То же самое."},
+    {"en":"I can’t wait!","ru":"Не могу дождаться!"},
+    {"en":"Let’s do it!","ru":"Давай сделаем это!"},
+    {"en":"Take your time.","ru":"Не торопись."},
+    {"en":"I changed my mind.","ru":"Я передумал."},
+    {"en":"Absolutely!","ru":"Абсолютно!"}
+  ];
+  const LS = 'phrases_v2';
+  const getData = ()=>{
+    const s = localStorage.getItem(LS);
+    try{return s? JSON.parse(s): defaultData.slice();}catch(e){return defaultData.slice();}
+  };
+  const setData = (d)=> localStorage.setItem(LS, JSON.stringify(d));
+
+  // ===== Utils =====
+  const $ = (id)=>document.getElementById(id);
+  const speak = (text)=>{ try{ const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=1.0; u.pitch=1.0; speechSynthesis.speak(u);}catch(e){ alert('TTS не поддерживается'); } };
+  const shuffle = (a)=>{ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+  const norm = (s)=> (s||'').toLowerCase().trim().replace(/[.,!?;:'\"()\-]/g,'').replace(/\s+/g,' ');
+  const lv = (a,b)=>{ a=a||''; b=b||''; const m=a.length,n=b.length; if(!m) return n; if(!n) return m; const dp=Array(n+1); for(let j=0;j<=n;j++) dp[j]=j; for(let i=1;i<=m;i++){ let prev=i-1,cur; dp[0]=i; for(let j=1;j<=n;j++){ cur=dp[j]; const cost=a[i-1]===b[j-1]?0:1; dp[j]=Math.min(dp[j]+1, dp[j-1]+1, prev+cost); prev=cur; } } return dp[n]; };
+  const similar = (a,b)=>{ a=norm(a); b=norm(b); if(!a||!b) return false; const d=lv(a,b); const L=Math.max(a.length,b.length)||1; const r=1-d/L; return r>=0.8 || (d<=2 && L>=5); };
+
+  // ===== Tabs =====
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(btn=>btn.addEventListener('click',()=>{
+    tabs.forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+    document.querySelectorAll('section').forEach(s=>s.style.display='none');
+    $(btn.dataset.tab).style.display='block';
+  }));
+
+  // ===== LEARN =====
+  let showRu = true;
+  let autoplay = false;
+  let apIndex = 0;
+  let apTimer = null;
+
+  function renderLearn(){
+    const list = $('learnList'); list.innerHTML='';
+    const data = getData();
+    data.forEach((p,idx)=>{
+      const div = document.createElement('div');
+      div.className='item';
+      div.innerHTML = `
+        <button class="btn primary" data-idx="${idx}">▶</button>
+        <div>
+          <div class="phrase-en">${p.en}</div>
+          <div class="phrase-ru"${showRu?'':' style="display:none"'}>${p.ru}</div>
+        </div>
+        <div class="controls">
+          <button class="btn" data-say="${idx}">🔊</button>
+        </div>`;
+      div.querySelector('[data-idx]').addEventListener('click',()=>speak(p.en));
+      div.querySelector('[data-say]').addEventListener('click',()=>speak(p.en));
+      list.appendChild(div);
+    });
+  }
+  $('toggleRu').addEventListener('click',()=>{ showRu=!showRu; renderLearn(); });
+  $('shuffleLearn').addEventListener('click',()=>{ setData(shuffle(getData())); renderLearn(); });
+  $('autoPlay').addEventListener('click',()=>{
+    if(autoplay) return;
+    autoplay=true; apIndex=0;
+    const data=getData();
+    const playNext=()=>{
+      if(!autoplay){clearInterval(apTimer);return;}
+      if(apIndex>=data.length){ autoplay=false; return; }
+      speak(data[apIndex].en);
+      apIndex++;
+      apTimer=setTimeout(playNext, 1800);
+    };
+    playNext();
+  });
+  $('stopPlay').addEventListener('click',()=>{ autoplay=false; if(apTimer) clearTimeout(apTimer); });
+
+  // ===== CARDS =====
+  let queue=[], qIndex=0, seen=0, streak=0, timer=null;
+  function initCards(){
+    const data=getData();
+    queue = data.map((p,i)=>({i,seen:false}));
+    if($('cardOrder').value==='random') shuffle(queue);
+    qIndex=0; seen=0; streak=0;
+    $('cardProgress').textContent=`${seen}/${queue.length}`;
+    $('streak').textContent='0';
+    nextCard(true);
+  }
+  function nextCard(first=false){
+    if(qIndex>=queue.length) qIndex=0;
+    const p = getData()[queue[qIndex].i];
+    $('cardPrompt').textContent = p.ru;
+    $('cardAnswer').style.display='none'; $('cardAnswer').textContent = p.en;
+    const sec = parseInt($('revealSec').value||'0',10);
+    if(timer) clearInterval(timer);
+    if(sec>0){
+      let t=sec; $('countdown').textContent=t;
+      timer=setInterval(()=>{ t--; $('countdown').textContent=t; if(t<=0){ clearInterval(timer); $('cardAnswer').style.display='block'; } },1000);
+    }else{$('countdown').textContent='off';}
+    if(!first) qIndex++;
+  }
+  function markCard(ok){
+    const it = queue[(qIndex-1+queue.length)%queue.length];
+    if(!it.seen){ it.seen=true; seen++; }
+    ok? (streak++):(streak=0, queue.push(it));
+    $('cardProgress').textContent=`${seen}/${queue.length}`;
+    $('streak').textContent=String(streak);
+  }
+  $('resetCards').addEventListener('click',initCards);
+  $('nextCard').addEventListener('click',()=>nextCard());
+  $('again').addEventListener('click',()=>{ markCard(false); nextCard(); });
+  $('knew').addEventListener('click',()=>{ markCard(true); nextCard(); });
+  $('speakAns').addEventListener('click',()=>speak($('cardAnswer').textContent));
+
+  // ===== DIALOGS =====
+  let dlg=[], di=0, ok=0;
+  const buildPrompts=()=>{
+    const data=getData();
+    const prompts = [
+      "Я встречаю тебя после работы. Скажи: «Как дела?»",
+      "Мы не виделись несколько месяцев. Скажи: «Давно не виделись!»",
+      "Я сказал что-то непонятное. Спроси: «Что ты имеешь в виду?»",
+      "Я объяснил слишком быстро. Скажи: «Я не понимаю».",
+      "Я говорю тихо. Попроси: «Повтори, пожалуйста».",
+      "Я извинился. Ответь: «Неважно / забудь».",
+      "Я объяснил опоздание. Скажи: «Логично».",
+      "Я жалуюсь на погоду. Ответь: «Это не имеет значения».",
+      "Мы прощаемся. Скажи: «Береги себя!»",
+      "Я переживаю. Ответь: «Не волнуйся».",
+      "Какой фильм смотреть? Ответь: «Тебе решать».",
+      "Я зову на вечеринку. Ответь: «Я подумаю».",
+      "Я предлагаю пиццу. Ответь: «Звучит хорошо».",
+      "Я спрашиваю: «Где ты?» Ответь: «Я уже в пути».",
+      "Я тороплю тебя. Ответь: «Секунду».",
+      "Ты готов? Ответь: «Я не уверен».",
+      "Предлагаю зал. Ответь: «Мне не хочется».",
+      "Я пролил кофе. Ответь: «Бывает».",
+      "Спасибо за помощь! Ответь: «Пожалуйста».",
+      "Я устал. Ответь: «Я тоже».",
+      "Концерт завтра! Ответь: «Не могу дождаться!»",
+      "Начнём сейчас? Ответь: «Давай сделаем это!»",
+      "Я тороплю. Ответь: «Не торопись».",
+      "Ты передумал. Скажи: «Я передумал».",
+      "Ты любишь мороженое? Ответь: «Абсолютно!»"
+    ];
+    dlg = getData().map((p,i)=>({prompt:prompts[i]||p.ru, ans:p.en}));
+  };
+  function initDlg(){
+    buildPrompts(); shuffle(dlg); di=0; ok=0; renderDlg();
+  }
+  function renderDlg(){
+    const it=dlg[di];
+    $('dlgPrompt').textContent = it.prompt;
+    $('dlgInput').value=''; $('dlgInput').classList.remove('success','fail');
+    $('dlgFeedback').textContent='';
+    $('dlgAnswer').style.display='none'; $('dlgAnswer').textContent='Ответ: '+it.ans;
+    $('dlgIdx').textContent = `${di+1}/${dlg.length}`;
+    $('dlgOk').textContent = String(ok);
+    $('dlgInput').focus();
+  }
+  function checkDlg(){
+    const it=dlg[di];
+    const val=$('dlgInput').value;
+    if(similar(val,it.ans)){
+      $('dlgInput').classList.add('success');
+      $('dlgFeedback').innerHTML='<span style="color:var(--ok)">✓ Верно</span>';
+      ok++; setTimeout(nextDlg, 450);
+    }else{
+      $('dlgInput').classList.add('fail');
+      $('dlgFeedback').innerHTML='<span style="color:var(--bad)">✗ Не совсем</span>';
+    }
+    $('dlgOk').textContent = String(ok);
+  }
+  function nextDlg(){ di=(di+1)%dlg.length; renderDlg(); }
+
+  $('checkDlg').addEventListener('click',checkDlg);
+  $('revealDlg').addEventListener('click',()=>{ $('dlgAnswer').style.display='block'; speak(dlg[di].ans); });
+  $('speakDlg').addEventListener('click',()=>speak(dlg[di].ans));
+  $('nextDlg').addEventListener('click',nextDlg);
+  $('shuffleDlg').addEventListener('click',()=>{ shuffle(dlg); renderDlg(); });
+  $('resetDlg').addEventListener('click',initDlg);
+
+  // ===== Import / Export =====
+  $('importBtn').addEventListener('click',()=>$('fileInput').click());
+  $('fileInput').addEventListener('change',(e)=>{
+    const f=e.target.files[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload=()=>{
+      try{
+        const data=JSON.parse(reader.result);
+        if(!Array.isArray(data)) throw new Error('JSON должен быть массивом объектов {en,ru}');
+        setData(data); renderLearn(); initCards(); initDlg(); alert('Импортировано ✅');
+      }catch(err){ alert('Ошибка JSON: '+err.message); }
+    };
+    reader.readAsText(f);
+  });
+  $('exportBtn').addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify(getData(),null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a');
+    a.href=url; a.download='phrases.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  });
+
+  // ===== Shortcuts =====
+  document.addEventListener('keydown',(e)=>{
+    if(e.key===' '){
+      if(getComputedStyle($('cards')).display!=='none') $('nextCard').click();
+      if(getComputedStyle($('dialogs')).display!=='none') $('nextDlg').click();
+    }
+  });
+
+  // ===== Init =====
+  try{ $('tz').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; }catch(e){}
+  renderLearn(); initCards(); initDlg();
+})();
+</script>
+</body>
+</html>
